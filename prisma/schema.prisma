@@ -1,0 +1,326 @@
+// prisma/schema.prisma
+// OmniLytix v1 — Pepper Mash Foundation
+// Prisma + PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+//////////////////////
+// Enums
+//////////////////////
+
+enum PartyType {
+  CUSTOMER
+  SUPPLIER
+  BOTH
+  INTERNAL
+}
+
+enum PartyStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ProductCategory {
+  PEPPER_MASH
+  PEPPER_PUREE
+  HOT_SAUCE
+}
+
+enum IntendedUse {
+  INGREDIENT
+  INTERMEDIATE
+  FINISHED_GOOD
+}
+
+enum RegulatoryClass {
+  RAW
+  FERMENTED
+  ACIDIFIED
+  SHELF_STABLE
+  REFRIGERATED
+  FROZEN
+}
+
+enum ProductForm {
+  MASH
+  PUREE
+  SAUCE
+  DRY
+  LIQUID
+}
+
+enum SpecProfileStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+enum FormulaStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+enum VariantStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+}
+
+enum LotStatus {
+  RECEIVED
+  QUARANTINE
+  RELEASED
+  HOLD
+  REJECTED
+  CONSUMED
+}
+
+enum FormulaBasis {
+  PERCENT
+  WEIGHT
+}
+
+enum FormulaLineRole {
+  PEPPER_COMPONENT
+  SALT_COMPONENT
+  ACID_COMPONENT
+  WATER_COMPONENT
+  OTHER
+}
+
+enum SpecMetric {
+  PH
+  SALT_PCT
+  PEPPER_SOLIDS_PCT
+  TOTAL_SOLIDS_PCT
+  BOSTWICK
+  VISCOSITY
+}
+
+enum EnforcementStage {
+  RECEIVING
+  IN_PROCESS
+  FINAL_RELEASE
+}
+
+//////////////////////
+// Models
+//////////////////////
+
+model Party {
+  partyId   String      @id @default(uuid()) @map("party_id")
+  partyName String      @db.Text @map("party_name")
+  partyType PartyType   @map("party_type")
+  status    PartyStatus @default(ACTIVE)
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  productVariants ProductVariant[] @relation("CustomerVariants")
+  suppliedLots    Lot[]            @relation("SupplierLots")
+
+  @@index([partyType], map: "idx_party_type")
+  @@index([status], map: "idx_party_status")
+  @@map("party")
+}
+
+model IngredientType {
+  ingredientTypeId String     @id @default(uuid()) @map("ingredient_type_id")
+  canonicalName    String     @unique @db.Text @map("canonical_name")
+  species          String?    @db.Text
+  heatClass        String?    @db.Text @map("heat_class")
+  colorClass       String?    @db.Text @map("color_class")
+  defaultForm      ProductForm @default(MASH) @map("default_form")
+  isPepper         Boolean    @default(false) @map("is_pepper")
+  active           Boolean    @default(true)
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+
+  aliases       IngredientAlias[]
+  formulaLines  FormulaLine[]
+  lots          Lot[]
+
+  @@index([isPepper], map: "idx_ingredient_is_pepper")
+  @@index([active], map: "idx_ingredient_active")
+  @@map("ingredient_type")
+}
+
+model IngredientAlias {
+  ingredientAliasId String @id @default(uuid()) @map("ingredient_alias_id")
+  ingredientTypeId  String @default(uuid()) @map("ingredient_type_id")
+  aliasName         String @db.Text @map("alias_name")
+
+  ingredientType IngredientType @relation(fields: [ingredientTypeId], references: [ingredientTypeId], onDelete: Cascade)
+
+  @@unique([ingredientTypeId, aliasName], map: "uq_alias_per_type")
+  @@index([aliasName], map: "idx_alias_name")
+  @@map("ingredient_alias")
+}
+
+model ProductType {
+  productTypeId          String         @id @map("product_type_id")
+  canonicalName          String         @unique @db.Text @map("canonical_name")
+  category               ProductCategory
+  intendedUse            IntendedUse    @map("intended_use")
+  regulatoryClassDefault RegulatoryClass @map("regulatory_class_default")
+  defaultForm            ProductForm    @map("default_form")
+  sellable               Boolean        @default(true)
+  versioningEnabled      Boolean        @default(true) @map("versioning_enabled")
+  active                 Boolean        @default(true)
+  createdAt              DateTime       @default(now()) @map("created_at")
+  updatedAt              DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  variants ProductVariant[]
+
+  @@index([category], map: "idx_product_type_category")
+  @@index([active], map: "idx_product_type_active")
+  @@map("product_type")
+}
+
+model SpecProfile {
+  specProfileId      String            @id @default(uuid()) @map("spec_profile_id")
+  name               String            @db.Text
+  appliesToCategory  ProductCategory   @map("applies_to_category")
+  status             SpecProfileStatus @default(DRAFT)
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+
+  versions SpecProfileVersion[]
+  variants ProductVariant[] @relation("VariantDefaultSpecProfile")
+
+  @@index([appliesToCategory], map: "idx_spec_profile_category")
+  @@index([status], map: "idx_spec_profile_status")
+  @@map("spec_profile")
+}
+
+model SpecProfileVersion {
+  specProfileVersionId String   @id @default(uuid()) @map("spec_profile_version_id")
+  specProfileId        String   @default(uuid()) @map("spec_profile_id")
+  versionNo            Int      @map("version_no")
+  effectiveFrom        DateTime @map("effective_from")
+  effectiveTo          DateTime? @map("effective_to")
+  notes                String?  @db.Text
+
+  specProfile SpecProfile @relation(fields: [specProfileId], references: [specProfileId], onDelete: Cascade)
+  items       SpecItem[]
+
+  @@unique([specProfileId, versionNo], map: "uq_spec_profile_version")
+  @@index([effectiveFrom], map: "idx_spec_version_effective_from")
+  @@map("spec_profile_version")
+}
+
+model SpecItem {
+  specItemId             String           @id @default(uuid()) @map("spec_item_id")
+  specProfileVersionId   String           @default(uuid()) @map("spec_profile_version_id")
+  metric                 SpecMetric
+  targetMin              Decimal?         @db.Decimal(12, 4) @map("target_min")
+  targetMax              Decimal?         @db.Decimal(12, 4) @map("target_max")
+  unit                   String           @db.Text
+  enforcementStage       EnforcementStage @map("enforcement_stage")
+  required               Boolean          @default(true)
+  testMethodRef          String?          @db.Text @map("test_method_ref")
+
+  specProfileVersion SpecProfileVersion @relation(fields: [specProfileVersionId], references: [specProfileVersionId], onDelete: Cascade)
+
+  @@index([metric], map: "idx_spec_item_metric")
+  @@index([enforcementStage], map: "idx_spec_item_stage")
+  @@map("spec_item")
+}
+
+model Formula {
+  formulaId   String        @id @default(uuid()) @map("formula_id")
+  name        String        @db.Text
+  basis       FormulaBasis
+  status      FormulaStatus @default(DRAFT)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  versions FormulaVersion[]
+  variants ProductVariant[] @relation("VariantDefaultFormula")
+
+  @@index([status], map: "idx_formula_status")
+  @@map("formula")
+}
+
+model FormulaVersion {
+  formulaVersionId String   @id @default(uuid()) @map("formula_version_id")
+  formulaId        String   @map("formula_id")
+  versionNo        Int      @map("version_no")
+  effectiveFrom    DateTime @map("effective_from")
+  effectiveTo      DateTime? @map("effective_to")
+  notes            String?  @db.Text
+
+  formula Formula @relation(fields: [formulaId], references: [formulaId], onDelete: Cascade)
+  lines   FormulaLine[]
+
+  @@unique([formulaId, versionNo], map: "uq_formula_version")
+  @@index([effectiveFrom], map: "idx_formula_version_effective_from")
+  @@map("formula_version")
+}
+
+model FormulaLine {
+  formulaLineId     String         @id @default(uuid()) @map("formula_line_id")
+  formulaVersionId  String         @default(uuid()) @map("formula_version_id")
+  ingredientTypeId  String         @default(uuid()) @map("ingredient_type_id")
+  lineRole          FormulaLineRole @map("line_role")
+  amount            Decimal        @db.Decimal(14, 6)
+  sortOrder         Int            @default(0) @map("sort_order")
+
+  formulaVersion FormulaVersion @relation(fields: [formulaVersionId], references: [formulaVersionId], onDelete: Cascade)
+  ingredientType IngredientType @relation(fields: [ingredientTypeId], references: [ingredientTypeId], onDelete: Restrict)
+
+  @@index([ingredientTypeId], map: "idx_formula_line_ingredient")
+  @@index([lineRole], map: "idx_formula_line_role")
+  @@map("formula_line")
+}
+
+model ProductVariant {
+  productVariantId      String        @id @default(uuid()) @map("product_variant_id")
+  productTypeId         String        @map("product_type_id")
+  customerId            String        @map("customer_id")
+  variantName           String        @db.Text @map("variant_name")
+  status                VariantStatus @default(DRAFT)
+  defaultSpecProfileId  String?       @map("default_spec_profile_id")
+  defaultFormulaId      String?       @map("default_formula_id")
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedAt             DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  productType ProductType @relation(fields: [productTypeId], references: [productTypeId], onDelete: Restrict)
+  customer    Party       @relation("CustomerVariants", fields: [customerId], references: [partyId], onDelete: Restrict)
+
+  defaultSpecProfile SpecProfile? @relation("VariantDefaultSpecProfile", fields: [defaultSpecProfileId], references: [specProfileId], onDelete: SetNull)
+  defaultFormula     Formula?     @relation("VariantDefaultFormula", fields: [defaultFormulaId], references: [formulaId], onDelete: SetNull)
+
+  @@index([productTypeId], map: "idx_variant_product_type")
+  @@index([customerId], map: "idx_variant_customer")
+  @@index([status], map: "idx_variant_status")
+  @@map("product_variant")
+}
+
+model Lot {
+  lotId            String    @id @default(uuid()) @map("lot_id")
+  lotCode          String    @unique @map("lot_code")
+  ingredientTypeId String    @map("ingredient_type_id")
+  supplierId       String?   @map("supplier_id")
+  receivedAt       DateTime? @map("received_at")
+  status           LotStatus @default(QUARANTINE)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  ingredientType IngredientType @relation(fields: [ingredientTypeId], references: [ingredientTypeId], onDelete: Restrict)
+  supplier       Party?         @relation("SupplierLots", fields: [supplierId], references: [partyId], onDelete: SetNull)
+
+  @@index([ingredientTypeId], map: "idx_lot_ingredient_type")
+  @@index([status], map: "idx_lot_status")
+  @@map("lot")
+}

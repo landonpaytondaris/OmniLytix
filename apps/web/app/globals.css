@@ -1,10 +1,17 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────────
+   OmniLytix Global Theme Baseline
+   Dark by default. Calm. Premium.
+   ───────────────────────────────────────────── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Hard-lock dark foundation */
+  --background: #000000;
+  --foreground: #ffffff;
 }
 
+/* Tailwind theme bridge */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -12,15 +19,48 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Optional: keep system dark preference aligned */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #000000;
+    --foreground: #ffffff;
   }
 }
 
+/* ─────────────────────────────────────────────
+   Global document rules
+   ───────────────────────────────────────────── */
+
+html,
 body {
+  height: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+
+  /* Prevent white bounce / iOS overscroll glow */
+  overscroll-behavior: none;
 }
+
+/* Font smoothing for “Apple-like” feel */
+body {
+  font-family: Arial, Helvetica, sans-serif;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Slight letter clarity boost */
+  text-rendering: optimizeLegibility;
+}
+
+/* Canvas safety: no interaction, no selection */
+canvas {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Remove legacy Next.js container (safe no-op in App Router) */
+/* #__next { height: 100%; } */

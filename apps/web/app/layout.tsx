@@ -1,4 +1,5 @@
 import "./globals.css";
+import AmbientFieldBackground from "../src/components/AmbientFieldBackground";
 
 export const metadata = {
   title: "OmniLytix",
@@ -11,8 +12,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" className="h-full">
+      <body className="h-full min-h-screen relative bg-black text-white overflow-hidden">
+        <AmbientFieldBackground />
+        <div className="relative z-10 min-h-screen">{children}</div>
+      </body>
+
     </html>
   );
 }

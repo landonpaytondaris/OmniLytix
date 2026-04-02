@@ -2,26 +2,37 @@
   "name": "web",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
   "dependencies": {
     "lucide-react": "^0.562.0",
     "next": "16.1.1",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
+"scripts": {
+  "dev": "HOST=0.0.0.0 PORT=3001 next dev",
+  "build": "next build",
+  "start": "next start -p 3001",
+  "lint": "next lint",
+
+  "db:check": "npx prisma validate --config=../../prisma.config.ts",
+  "db:migrate": "npx prisma migrate dev --config=../../prisma.config.ts",
+  "db:gen": "npx prisma generate --config=../../prisma.config.ts",
+  "db:studio": "npx prisma studio --config=../../prisma.config.ts",
+
+  "omni:db": "npm run db:check && npm run db:migrate && npm run db:gen",
+  "omni:ui": "npm run dev",
+  "omni:full": "npm run omni:db && npm run dev"
+},
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.23",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
-    "tailwindcss": "^4",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18",
     "typescript": "^5"
   }
 }
