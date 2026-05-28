@@ -151,7 +151,7 @@ export default function Home() {
 
   const apps: AppDef[] = useMemo(
     () => [
-      { id: "receive", name: "Receive", subtitle: "RMIP intake", Icon: Inbox, badge: 3 },
+      { id: "receive", name: "Production", subtitle: "RMIP intake", Icon: Inbox, badge: 3 },
       { id: "batch", name: "Batch", subtitle: "Build runs", Icon: FlaskConical },
       { id: "trace", name: "Trace", subtitle: "Lot passport", Icon: Search },
       { id: "suppliers", name: "Suppliers", subtitle: "Scorecards", Icon: Factory },
@@ -225,7 +225,7 @@ export default function Home() {
                   "linear-gradient(to right, transparent, rgba(255,255,255,0.35), transparent)",
               }}
             />
-            <DockButton label="Receive" Icon={Inbox} active />
+            <DockButton label="Production" Icon={Inbox} active />
             <DockButton label="Trace" Icon={Search} />
             <DockButton label="Batch" Icon={FlaskConical} />
             <DockButton label="Settings" Icon={Settings} />
